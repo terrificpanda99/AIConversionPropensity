@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Lead Propensity Demo</title>
+    <style>
+        table { border-collapse: collapse; margin-top: 1em; }
+        th, td { border: 1px solid #ccc; padding: 4px; }
+    </style>
+</head>
+<body>
+    <h1>Lead Propensity Demo</h1>
+    <h2>Upload Leads CSV</h2>
+    <input type="file" id="csvFile">
+    <button onclick="upload()">Upload</button>
+
+    <div id="main" style="display:none;">
+        <h2>Leads</h2>
+        <table id="leads"></table>
+
+        <h3>Add New Lead</h3>
+        <form id="add-form"></form>
+    </div>
+
+<script>
+async function upload() {
+    const file = document.getElementById('csvFile').files[0];
+    if (!file) return;
+    const form = new FormData();
+    form.append('file', file);
+    const res = await fetch('/upload', { method: 'POST', body: form });
+    const data = await res.json();
+    showLeads(data);
+}
+
+async function addLead(event) {
+    event.preventDefault();
+    const formElem = document.getElementById('add-form');
+    const form = new FormData(formElem);
+    const res = await fetch('/add', { method: 'POST', body: form });
+    const data = await res.json();
+    addRow(data);
+    formElem.reset();
+}
+
+function showLeads(data) {
+    const table = document.getElementById('leads');
+    table.innerHTML = '';
+    const headerRow = document.createElement('tr');
+    data.headers.forEach(h => {
+        const th = document.createElement('th');
+        th.textContent = h;
+        headerRow.appendChild(th);
+    });
+    const thScore = document.createElement('th');
+    thScore.textContent = 'Score';
+    headerRow.appendChild(thScore);
+    table.appendChild(headerRow);
+    data.leads.forEach(addRow);
+
+    const form = document.getElementById('add-form');
+    form.innerHTML = '';
+    data.headers.forEach(h => {
+        const label = document.createElement('label');
+        label.textContent = h + ':';
+        const input = document.createElement('input');
+        input.name = h;
+        input.type = 'text';
+        form.appendChild(label);
+        form.appendChild(input);
+        form.appendChild(document.createElement('br'));
+    });
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.textContent = 'Score Lead';
+    form.appendChild(submit);
+    form.onsubmit = addLead;
+
+    document.getElementById('main').style.display = '';
+}
+
+function addRow(rowData) {
+    const table = document.getElementById('leads');
+    const row = document.createElement('tr');
+    rowData.features.forEach(v => {
+        const td = document.createElement('td');
+        td.textContent = v;
+        row.appendChild(td);
+    });
+    const tdScore = document.createElement('td');
+    tdScore.textContent = rowData.score.toFixed(3);
+    row.appendChild(tdScore);
+    table.appendChild(row);
+}
+</script>
+</body>
+</html>
